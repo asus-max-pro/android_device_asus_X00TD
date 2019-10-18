@@ -309,6 +309,12 @@ PRODUCT_PACKAGES += \
     SecureElement \
     Tag \
 
+PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
+    ro.vendor.qti.va_aosp.support=1
+
+PRODUCT_ODM_PROPERTIES += \
+    ro.vendor.qti.va_odm.support=1
+
 # OMX
 PRODUCT_PACKAGES += \
     libaacwrapper \
@@ -391,6 +397,9 @@ PRODUCT_BOOT_JARS += \
     qcrilhook
 
 # QCOM
+PRODUCT_PACKAGES += \
+    libqti_vndfwk_detect
+    
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/configs/privapp-permissions-qti.xml:system/etc/permissions/privapp-permissions-qti.xml
 
