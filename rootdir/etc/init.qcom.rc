@@ -44,6 +44,10 @@ on early-init
     chown system graphics /sys/kernel/debug/dri/0/debug/recovery_dbgbus
     chown system graphics /sys/kernel/debug/dri/0/debug/recovery_vbif_dbgbus
 
+    # Change ownership of sw_sync node
+    chown system graphics /sys/kernel/debug/sync/sw_sync
+    chmod 0666 /sys/kernel/debug/sync/sw_sync
+
     chown root system /dev/kmsg
     chmod 0620 /dev/kmsg
     # Load WIGIG platform driver
@@ -69,6 +73,7 @@ on early-boot
     # Allow subsystem (modem etc) debugging
     write /sys/kernel/boot_adsp/boot 1
     write /sys/kernel/boot_cdsp/boot 1
+    write /sys/devices/virtual/npu/msm_npu/boot 1
     write /sys/kernel/boot_slpi/boot 1
     setprop ro.alarm_boot false
 
@@ -89,8 +94,12 @@ on early-boot
     chown system system /mnt/vendor/persist/sensors/registry/registry/sensors_registry
     chown system system /mnt/vendor/persist/sensors/sensors_settings
     chown system system /mnt/vendor/persist/sensors/registry/sns_reg_config
+    chown system system /mnt/vendor/persist/sensors/registry/sns_reg_version
     chown system system /mnt/vendor/persist/sensors/registry/config
     chmod 0664 /mnt/vendor/persist/sensors/sensors_settings
+
+    chown system system /mnt/vendor/persist/data/pfm/licenses
+    chmod 0775 /mnt/vendor/persist/data/pfm/licenses
 
 on boot
     # Prevents permission denied error for telephony
@@ -146,9 +155,8 @@ on boot
     mkdir /persist/alarm 0770 system system
     mkdir /mnt/vendor/persist/time 0770 system system
     mkdir /mnt/vendor/persist/secnvm 0770 system system
-
-    #Create NETMGR daemon socket area
-    mkdir /dev/socket/netmgr 0750 radio radio
+    mkdir /mnt/vendor/persist/iar_db 0770 system system
+    mkdir /mnt/vendor/spunvm 0770 system system
 
     # LED torch permissions
     chmod 0666 /sys/class/leds/led:torch_0/brightness
@@ -157,11 +165,6 @@ on boot
     chmod 0666 /sys/class/leds/led:switch_1/brightness
 
     setprop wifi.interface wlan0
-
-#   Define TCP buffer sizes for various networks
-#   ReadMin, ReadInitial, ReadMax, WriteMin, WriteInitial, WriteMax,
-    setprop net.tcp.buffersize.wifi    524288,2097152,4194304,262144,524288,1048576
-
 
     setprop ro.telephony.call_ring.multiple false
 
@@ -177,25 +180,7 @@ on boot
 
     chmod 0444 /sys/devices/platform/msm_hsusb/gadget/usb_state
 
-#   Define TCP buffer sizes for various networks
-#   ReadMin, ReadInitial, ReadMax, WriteMin, WriteInitial, WriteMax,
-    setprop net.tcp.buffersize.default 4096,87380,524288,4096,16384,110208
-    setprop net.tcp.buffersize.lte     2097152,4194304,8388608,262144,524288,1048576
-    setprop net.tcp.buffersize.umts    4094,87380,110208,4096,16384,110208
-    setprop net.tcp.buffersize.hspa    4094,87380,1220608,4096,16384,1220608
-    setprop net.tcp.buffersize.hsupa   4094,87380,1220608,4096,16384,1220608
-    setprop net.tcp.buffersize.hsdpa   4094,87380,1220608,4096,16384,1220608
-    setprop net.tcp.buffersize.hspap   4094,87380,1220608,4096,16384,1220608
-    setprop net.tcp.buffersize.edge    4093,26280,35040,4096,16384,35040
-    setprop net.tcp.buffersize.gprs    4092,8760,11680,4096,8760,11680
-    setprop net.tcp.buffersize.evdo    4094,87380,524288,4096,16384,262144
-
     setprop net.tcp.2g_init_rwnd 10
-
-#   Assign TCP buffer thresholds to be ceiling value of technology maximums
-#   Increased technology maximums should be reflected here.
-    write /proc/sys/net/core/rmem_max  8388608
-    write /proc/sys/net/core/wmem_max  8388608
 
     # To prevent out of order acknowledgements from making
     # connection tracking to treat them as not belonging to
@@ -234,6 +219,8 @@ on boot
 
     chown system system /sys/class/backlight/panel0-backlight/brightness
     chown system system /sys/class/backlight/panel0-backlight/max_brightness
+    chown system system /sys/class/backlight/panel1-backlight/brightness
+    chown system system /sys/class/backlight/panel1-backlight/max_brightness
 
     # Allow access to sensors device attributes
     chown system system /sys/class/sensors/MPU6050-accel/enable
@@ -256,6 +243,10 @@ on boot
 
     # Create hvdcp_opti directory
     mkdir /mnt/vendor/persist/hvdcp_opti 0770 root system
+
+    #sensors log dir
+    mkdir /data/vendor/sensors
+    chown system system /data/vendor/sensors
 
 # msm specific files that need to be created on /data
 on post-fs-data
@@ -291,6 +282,7 @@ on post-fs-data
 
     #Create directory for tftp
     mkdir /data/vendor/tombstones 0771 system system
+    mkdir /data/vendor/tombstones/rfs 0771 system system
 
     mkdir /data/vendor/ramdump 0771 root system
     mkdir /data/vendor/bluetooth 0770 bluetooth bluetooth
@@ -323,22 +315,6 @@ on post-fs-data
 
     # Huaqin add for ZQL1650-126 CountryCode by yangzhiyuan at 2018/01/23 end
 
-    #create port-bridge log dir
-    mkdir /data/vendor/port_bridge 0770 radio radio
-    chmod 0770 /data/vendor/port_bridge
-
-    #create netmgr log dir
-    mkdir /data/vendor/netmgr 0770 radio radio
-    chmod 0770 /data/vendor/netmgr
-
-    #create ipacm log dir
-    mkdir /data/vendor/ipa 0770 radio radio
-    chmod 0770 /data/vendor/ipa
-
-    #Create QTI dir for logs
-    mkdir /data/vendor/dataqti 0770 radio radio
-    chmod 0770 /data/vendor/dataqti
-
     # Create the directories used by CnE subsystem
     mkdir /data/vendor/connectivity 0771 radio radio
     chown radio radio /data/vendor/connectivity
@@ -352,6 +328,7 @@ on post-fs-data
 
     # Create directory for radio
     mkdir /data/vendor/radio 0770 system radio
+    rm /data/vendor/radio/shmbus
 
     # Create directory for modem_config
     mkdir /data/vendor/modem_config 0570 radio root
@@ -380,6 +357,7 @@ on post-fs-data
     chown system system /sys/devices/platform/msm_sdcc.4/polling
 
     #Create the symlink to qcn wpa_supplicant folder for ar6000 wpa_supplicant
+    mkdir /data/system 0775 system system
     #symlink /data/misc/wifi/wpa_supplicant /data/system/wpa_supplicant
 
     #Create directories for Location services
@@ -403,6 +381,9 @@ on post-fs-data
     mkdir /data/fota 0771
     chown system system /data/fota
 
+    #Create directory for hostapd
+    mkdir /data/hostapd 0770 system wifi
+
     # Create /data/time folder for time-services
     mkdir /data/vendor/time/ 0700 system system
 
@@ -419,6 +400,8 @@ on post-fs-data
     mkdir /data/vendor/perfd 0770 root system
     chmod 2770 /data/vendor/perfd
     rm /data/vendor/perfd/default_values
+
+    mkdir /data/vendor/secure_element 0777 system system
 
     #Create IOP  deamon related dirs
     mkdir /data/vendor/iop 0700 root system
@@ -455,12 +438,13 @@ on post-fs-data
     # set aggressive read ahead for dm-0 and dm-1 during boot up
     write /sys/block/dm-0/queue/read_ahead_kb 2048
     write /sys/block/dm-1/queue/read_ahead_kb 2048
+    write /sys/block/dm-2/queue/read_ahead_kb 2048
 
     # Create vpp directory
     mkdir /data/vendor/vpp 0770 media media
 
     #Create dir for TUI
-    mkdir /data/vendor/tui 0700 system system
+    mkdir /data/vendor/tui 0700 system drmrpc
 
 service nqnfcinfo /vendor/bin/nqnfcinfo
     class late_start
@@ -522,9 +506,9 @@ on property:persist.vendor.ssr.enable_ramdumps=0
 
 on property:sys.boot_completed=1
     write /dev/kmsg "Boot completed "
-    #Reset read ahead for dm-0 and dm-1 to 128kb
-    write /sys/block/dm-0/queue/read_ahead_kb 128
-    write /sys/block/dm-1/queue/read_ahead_kb 128
+    #Reset read ahead for dm-0 and dm-1 to 512kb
+    write /sys/block/dm-0/queue/read_ahead_kb 512
+    write /sys/block/dm-1/queue/read_ahead_kb 512
     #WDSP FW boot sysfs node used by STHAL
     chown media audio /sys/kernel/wdsp0/boot
     chown media audio /sys/kernel/wcd_cpe0/fw_name
@@ -552,12 +536,6 @@ on property:vendor.bluetooth.dun.status=stopped
 on property:ro.bluetooth.ftm_enabled=true
     start ftmd
 
-on property:vendor.bluetooth.startbtsnoop=true
-    start vendor.btsnoop
-
-on property:vendor.bluetooth.startbtsnoop=false
-    stop vendor.btsnoop
-
 on property:vendor.bluetooth.startbtlogger=true
     start vendor.bt_logger
 
@@ -578,16 +556,6 @@ on property:vold.decrypt=trigger_restart_framework
 
 on property:persist.env.fastdorm.enabled=true
     setprop persist.radio.data_no_toggle 1
-
-service vendor.cnd /vendor/bin/cnd
-    class main
-    user system
-    group system wifi inet radio wakelock net_admin
-
-service dpmQmiMgr /vendor/bin/dpmQmiMgr
-    class main
-    user system
-    group system
 
 service vendor.qrtr-ns /vendor/bin/qrtr-ns -f
     class core
@@ -618,13 +586,6 @@ service vendor.bt-dun /system/bin/dun-server /dev/smd7 /dev/rfcomm0
     disabled
     oneshot
 
-service vendor.btsnoop /system/bin/btsnoop
-   user bluetooth
-   group bluetooth net_bt_admin sdcard_rw sdcard_r media_rw
-   class late_start
-   disabled
-   oneshot
-
 service vendor.bt_logger /system/bin/bt_logger
    user bluetooth
    group bluetooth net_bt_admin sdcard_rw sdcard_r media_rw
@@ -639,70 +600,23 @@ service ftmd /system/bin/logwrapper /system/bin/ftmdaemon
     disabled
     oneshot
 
-service vendor.port-bridge /vendor/bin/port-bridge
-    class main
-    user radio
-    group radio system inet
-    disabled
-    oneshot
-
 service qmiproxy /system/bin/qmiproxy
     class main
     user radio
     group radio diag
     disabled
 
-# QMUX must be in multiple groups to support external process connections
-service vendor.qmuxd /vendor/bin/qmuxd
-    class main
-    user root
-    group radio audio bluetooth gps nfc diag
-    disabled
-
-service vendor.netmgrd /vendor/bin/netmgrd
-    class main
-    disabled
-
-service vendor.ipacm-diag /vendor/bin/ipacm-diag
-    class main
-    user radio
-    socket ipacm_log_file dgram 660 radio radio
-    group radio diag oem_2901
-    disabled
-
-service vendor.ipacm /vendor/bin/ipacm
-    class main
-    user radio
-    group radio inet
-    disabled
-
-service vendor.dataqti /vendor/bin/qti
-    class main
-    user radio
-    group radio oem_2901 diag usb net_admin
-    disabled
-
-service vendor.dataadpl /vendor/bin/adpl
-    class main
-    user radio
-    group radio oem_2901 diag usb net_admin
-    disabled
-
-service vendor.sensors /vendor/bin/sscrpcd
-    class core
+service vendor.sensors /vendor/bin/sscrpcd sensorspd
+    class early_hal
     user system
-    group system
-    disabled
+    group system wakelock
+    capabilities BLOCK_SUSPEND
 
 service vendor.sensors.qti /vendor/bin/sensors.qti
     class core
     user system
     group system
     disabled
-
-on property:ro.vendor.use_data_netmgrd=false
-    # netmgr not supported on specific target
-    stop vendor.netmgrd
 
 # Adjust socket buffer to enlarge TCP receive window for high bandwidth
 # but only if ro.data.large_tcp_window_size property is set.
@@ -754,22 +668,23 @@ service fstman_wlan0 /vendor/bin/fstman -B -ddd -c /data/vendor/wifi/fstman.ini 
     disabled
     oneshot
 
-service wigighalsvc /vendor/bin/wigighalsvc
-    interface vendor.qti.hardware.wigig.supptunnel@1.0::ISuppTunnelProvider default
-    class hal
-    user system
-    group wifi
-    # needed for on-demand insmod/rmmod of wigig module
-    capabilities SYS_MODULE
-    disabled
-
 service wigignpt /vendor/bin/wigignpt
     interface vendor.qti.hardware.wigig.netperftuner@1.0::INetPerfTuner default
     class hal
-    socket wigignpt stream 660 system wifi
+    socket wigig/wigignpt stream 660 system wifi
     user system
     group wifi
     capabilities NET_ADMIN
+    disabled
+
+on property:persist.vendor.wigig.npt.enable=1
+    start wigignpt
+
+service vendor.sensingdaemon /vendor/bin/sensingdaemon
+    class hal
+    socket wigig/sensingdaemon stream 660 system wifi
+    user system
+    group wifi
     disabled
 
 service dhcpcd_wlan0 /system/bin/dhcpcd -ABKLG
@@ -835,18 +750,6 @@ service wifi_ftmd /vendor/bin/wifi_ftmd
 on property:vendor.wifi.ftmd.load=true
     insmod /system/lib/modules/pronto/pronto_wlan.ko con_mode=5
 
-on property:persist.vendor.data.shs_ko_load=1
-    exec u:r:vendor_modprobe:s0 -- /vendor/bin/modprobe -a -d /vendor/lib/modules rmnet_shs
-
-on property:persist.vendor.data.shs_ko_load=0
-    exec u:r:vendor_modprobe:s0 -- /vendor/bin/modprobe -r -d /vendor/lib/modules rmnet_shs
-
-on property:persist.vendor.data.perf_ko_load=1
-    exec u:r:vendor_modprobe:s0 -- /vendor/bin/modprobe -a -d /vendor/lib/modules rmnet_perf
-
-on property:persist.vendor.data.perf_ko_load=0
-    exec u:r:vendor_modprobe:s0 -- /vendor/bin/modprobe -r -d /vendor/lib/modules rmnet_perf
-
 service cnss-daemon /vendor/bin/cnss-daemon -n -l
     class late_start
     user system
@@ -854,6 +757,7 @@ service cnss-daemon /vendor/bin/cnss-daemon -n -l
     capabilities NET_ADMIN
 
 on property:sys.shutdown.requested=*
+    write /sys/kernel/shutdown_wlan/shutdown 1
     stop cnss-daemon
 
 service dhcpcd_bt-pan /system/bin/dhcpcd -BKLG
@@ -991,8 +895,9 @@ service profiler_daemon /system/bin/profiler_daemon
 
 service charger /charger
     class charger
-    group system graphics
-    seclabel u:r:healthd:s0
+    user root
+    group system graphics input
+    seclabel u:r:charger:s0
 
 service vendor.ssr_diag /vendor/bin/ssr_diag
     class late_start
@@ -1101,10 +1006,6 @@ service poweroffhandler /vendor/bin/poweroffhandler
     disabled
     oneshot
 
-on property:init.svc.surfaceflinger=restarting
-    stop  vendor.hwcomposer-2-1
-    start vendor.hwcomposer-2-1
-
 on property:vendor.display.lcd_density=*
     setprop ro.sf.lcd_density ${vendor.display.lcd_density}
 
@@ -1148,8 +1049,19 @@ on property:vendor.opengles.version=*
 on property:vendor.gpu.available_frequencies=*
     setprop ro.vendor.gpu.available_frequencies ${vendor.gpu.available_frequencies}
 
-service vendor.wifilearner /vendor/bin/wifilearner
-    class main
-    user wifi
-    group wifi
+service vendor.audio-hal-2-0 /vendor/bin/hw/android.hardware.audio@2.0-service
+    override
+    class hal
+    user audioserver
+    # media gid needed for /dev/fm (radio) and for /data/misc/media (tee)
+    group audio camera drmrpc inet media mediadrm net_bt net_bt_admin net_bw_acct oem_2901 wakelock
+    capabilities BLOCK_SUSPEND
+    ioprio rt 4
+    writepid /dev/cpuset/foreground/tasks /dev/stune/foreground/tasks
+    # audioflinger restarts itself when it loses connection with the hal
+    # and its .rc file has an "onrestart restart audio-hal" rule, thus
+    # an additional auto-restart from the init process isn't needed.
     oneshot
+    interface android.hardware.audio@5.0::IDevicesFactory default
+    interface android.hardware.audio@4.0::IDevicesFactory default
+    interface android.hardware.audio@2.0::IDevicesFactory default
